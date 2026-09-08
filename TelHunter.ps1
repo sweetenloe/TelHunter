@@ -2,7 +2,7 @@ $env:DOTNET_CLI_TELEMETRY_OPTOUT=1
 $env:POWERSHELL_TELEMETRY_OPTOUT=1
 $env:NUGET_TELEMETRY_OPTOUT=1
 $env:AZURE_CORE_COLLECT_TELEMETRY=0
-if($PSVersionTable.PSEdition -eq 'Core'){Write-Error "Run this script in Windows PowerShell (Desktop), not PowerShell 7/Core (pwsh).";exit 1}
+if($PSVersionTable.PSEdition -eq 'Core'){Write-Error "Run this script in < 7 Windows PowerShell (Desktop).";exit 1}
 $p=New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent());if(-not $p.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)){Write-Error "Run this script in an elevated Windows PowerShell session.";exit 1}
 function Get-RegValue{param([string]$Path,[string]$Name)try{if(-not(Test-Path $Path)){return $null};(Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue).$Name}catch{$null}}
 function Set-RegValueSafe{param([string]$Path,[string]$Name,[object]$Value,[string]$Type='DWord')try{if(-not(Test-Path $Path)){New-Item -Path $Path -Force|Out-Null};New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType $Type -Force|Out-Null;Write-Host ("OK: {0}\{1} = {2} ({3})" -f $Path,$Name,$Value,$Type)}catch{Write-Warning ("Failed to set {0}\{1}: {2}" -f $Path,$Name,$_.Exception.Message)}}
@@ -31,8 +31,9 @@ Write-Host "`n[Activity History]" -ForegroundColor Green;$report.ActivityHistory
 Write-Host "`n[Advertising ID]" -ForegroundColor Green;$report.AdvertisingId|Format-List
 Write-Host "`n[Tailored Experiences]" -ForegroundColor Green;$report.TailoredExperiences|Format-List
 Write-Host "`n[Edge Telemetry (Policy)]" -ForegroundColor Green;$report.EdgeTelemetry|Format-List
-Write-Host "`n=== Telemetry FIX Options ===" -ForegroundColor Yellow;Write-Host "1) Reduce Diagnostic Data / Telemetry level to minimal (AllowTelemetry=0)";Write-Host "2) Disable telemetry-related services (DiagTrack, dmwappushservice, DoSvc->Manual, WerSvc, PcaSvc)";Write-Host "3) Disable telemetry / CEIP scheduled tasks";Write-Host "4) Disable Windows Error Reporting (WER)";Write-Host "5) Disable Activity History publishing / upload";Write-Host "6) Disable Advertising ID (current user)";Write-Host "7) Disable Tailored Experiences";Write-Host "8) Disable Edge/Chromium telemetry + CLI opt-out env vars";Write-Host "9) Apply ALL of the above";Write-Host "0) Do nothing (exit)";Write-Host ""
+Write-Host "`n=== Telemetry FIX Options ===" -ForegroundColor Yellow;Write-Host "1) Reduce Diagnostic Data / Telemetry level to minimal (AllowTelemetry=0)";Write-Host "2) Disable telemetry-related services (DiagTrack, dmwappushservice, DoSvc->Manual, WerSvc, PcaSvc)";Write-Host "3) Disable telemetry / CEIP scheduled tasks";Write-Host "4) Disable Windows Error Reporting (WER)";Write-Host "5) Disable Activity History publishing / upload";Write-Host "6) Disable Advertising ID (current user)";Write-Host "7) Disable Tailored Experiences";Write-Host "8) Disable Edge/Chromium telemetry + CLI opt-out env vars";Write-Host "9) Fuck ALL Telemetry";Write-Host "0) Do nothing (exit)";Write-Host ""
 $choice=Read-Host "Enter one or more options (e.g. 1,3,5 or 9 or 0)";if(-not $choice){Write-Host "No selection made. Exiting.";exit 0};if($choice -match '(^|[,; ]+)0([,; ]+|$)'){Write-Host "Exit requested. No changes applied.";exit 0}
 $selected=$choice -split '[,; ]+'|Where-Object{$_ -match '^[1-9]$'}|Select-Object -Unique;if(-not $selected){Write-Host "No valid options selected. Exiting with no changes.";exit 0};if($selected -contains '9'){$selected='1','2','3','4','5','6','7','8'}
 Write-Host ("`nApplying selected fixes: {0}" -f ($selected -join ', ')) -ForegroundColor Yellow;foreach($opt in $selected){switch($opt){'1'{Disable-DiagnosticData}'2'{Disable-TelemetryServices}'3'{Disable-TelemetryTasks}'4'{Disable-WER}'5'{Disable-ActivityHistory}'6'{Disable-AdvertisingId}'7'{Disable-TailoredExperiences}'8'{Disable-EdgeTelemetry}}}
-Write-Host "`nDone. Some changes may require sign-out or reboot to fully apply." -ForegroundColor Green
+Write-Host "`nDone. Rebooting in 10..." -ForegroundColor Green
+shutdown /r /t 10
